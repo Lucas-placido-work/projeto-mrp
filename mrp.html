@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+  <title>Módulo de Planejamento</title>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <header>
+      <div class="p-3 mb-2 text-white" id="idCabecalho">
+        <h2 style="font-weight: bold;">Módulo de Planejamento</h2>
+      </div>
+    </header>
+    <section>
+      <!-- FORM WRITE -->
+      <form class="form-container" id="formMontarProduto">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label for="nome">Nome do Produto</label>
+            <select id="selectProduto" class="form-select form-control" aria-label="Default select example">
+              <option value="" selected>Selecione o produto a montar</option>
+              <option value="Bicicleta">Bicicleta</option>
+              <option value="Computador">Computador</option>
+            </select>
+          </div>
+          <div id="qtdProduto" hidden>
+            <label for="quantidade">Quantidade do Produto</label>
+            <input type="number" class="form-control" id="quantidade" name="quantidade"
+              placeholder="Quantidade do Produto" required>
+          </div>
+        </div>
+        <!-- BTN SUBMIT -->
+        <div class="mt-5 row">
+          <div class="col d-flex justify-content-end">
+            <button type="submit" class="btn btn-info text-white"><strong>Montar Produto</strong></button>
+          </div>
+        </div>
+      </form>
+    </section>
+    <br />
+    <hr />
+    <br />
+    <div id="spaceTable"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+    crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/color/jquery.color-3.0.0.js"
+    integrity="sha256-nXuT4oV5wsIpHV/V7Ay53Vf/1rg2lqpiGWoP9CRk2tM=" crossorigin="anonymous"></script>
+  <script>
+    let aux_materiais = [];
+    $("#selectProduto").on("change", function () {
+      if ($("#selectProduto").val() == "Bicicleta" || $("#selectProduto").val() == "Computador") {
+        $("#qtdProduto").removeAttr("hidden");
+      }
+    });
+
+    function get_dados_table() {
+      let result = [];
+      $.ajax({
+        data: { produto: $("#selectProduto").val() },
+        url: "router.php?action=fetch_estoque",
+        type: "POST",
+        dataType: 'json',
+        async: false, // faz a requisição síncrona (bloqueia até receber resposta)
+        success: function (response) {
+          result = response;
+        },
+        error: function () {
+          console.log("Erro: ");
+        }
+      });
+      return result;
+    }
+
+    $(document).ready(function () {
+      $("#formMontarProduto").submit(function () {
+        event.preventDefault();
+        let dados = {
+          produto: $("#selectProduto").val(),
+          quantidade: $("#quantidade").val()
+        };
+        $.ajax({
+          data: dados,
+          url: "router.php?action=calcular",
+          type: "POST",
+          dataType: "json",
+          success: function (response) {
+            aux_materiais = response;
+            render_table(aux_materiais);
+          },
+          error: function () {
+            console.log("Erro: ");
+          }
+        });
+      });
+    });
+
+    function render_table(dados) {
+      let estoque = get_dados_table();
+      if (dados.length != 0) {
+        let tabela = "<table style='width: 80%;' class='table' id='table-data'><thead class='table-dark'><tr><th>Produto</th><th>Componente</th><th>Necessário</th><th>Quantidade em Estoque</th><th>Quantidade a Comprar</th></tr></thead>";
+        estoque.forEach(item => {
+          let estoqueItem = dados[item.nome_componente] || null;
+          let qtdEstoque = estoqueItem ? estoqueItem : 0;
+          let qtdComprar = qtdEstoque - item.quantidade > 0 ? qtdEstoque - item.quantidade : 0;
+
+          tabela += "<tbody><tr>"
+            + '<td>' + item.produto + '</td>'
+            + '<td>' + item.nome_componente + '</td>'
+            + '<td>' + qtdEstoque + '</td>'
+            + '<td>' + item.quantidade + '</td>'
+            + '<td>' + qtdComprar + '</td>'
+          tabela += "</tr></tbody>";
+        });
+        tabela += '</table>';
+
+        $("#spaceTable").html(tabela);
+
+      }
+    }
+
+  </script>
+</body>
+
+</html>

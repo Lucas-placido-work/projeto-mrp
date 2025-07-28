@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Redirecionar URLs amigáveis para o router
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([^/]+)/?$ router.php?page=$1 [QSA,L]
+
+# Página padrão
+RewriteRule ^$ router.php [QSA,L]
